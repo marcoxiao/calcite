@@ -3691,6 +3691,8 @@ SqlKind comp() :
 |
     <NE> { return SqlKind.NOT_EQUALS; }
 |
+    <NNE> { return SqlKind.NOT_EQUALS; }
+|
     <NE2> {
         if (!this.conformance.isBangEqualAllowed()) {
             throw SqlUtil.newContextException(getPos(), RESOURCE.bangEqualNotAllowed());
@@ -7143,6 +7145,7 @@ SqlBinaryOperator BinaryRowOperator() :
 |   <LE> { return SqlStdOperatorTable.LESS_THAN_OR_EQUAL; }
 |   <GE> { return SqlStdOperatorTable.GREATER_THAN_OR_EQUAL; }
 |   <NE> { return SqlStdOperatorTable.NOT_EQUALS; }
+|   <NNE> { return SqlStdOperatorTable.NOT_NULL_EQUALS; }
 |   <NE2> {
         if (!this.conformance.isBangEqualAllowed()) {
             throw SqlUtil.newContextException(getPos(), RESOURCE.bangEqualNotAllowed());
@@ -8109,6 +8112,7 @@ void NonReservedKeyWord2of3() :
 |   < LE: "<=" >
 |   < GE: ">=" >
 |   < NE: "<>" >
+|   < NNE: "<=>" >
 |   < NE2: "!=" >
 |   < PLUS: "+" >
 |   < MINUS: "-" >
