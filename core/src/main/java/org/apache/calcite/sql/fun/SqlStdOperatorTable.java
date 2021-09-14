@@ -280,7 +280,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
           true,
           ReturnTypes.DYADIC_STRING_SUM_PRECISION_NULLABLE,
           null,
-          OperandTypes.STRING_SAME_SAME);
+          OperandTypes.ANY);
 
   /**
    * Arithmetic division operator, '<code>/</code>'.

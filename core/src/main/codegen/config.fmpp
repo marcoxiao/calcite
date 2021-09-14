@@ -50,6 +50,23 @@ data: {
     implementationFiles: [
       "parserImpls.ftl"
     ]
+    # List of non-reserved keywords to add;
+    # items in this list become non-reserved
+    nonReservedKeywordsToAdd: [
+    "DATE"
+    "MONTH"
+    "TIME"
+    "CHAR"
+    "VALUE"
+    "USER"
+    ]
+    # List of methods for parsing builtin function calls.
+    # Return type of method implementation should be "SqlNode".
+    # Example: "DateFunctionCall()".
+    builtinFunctionCallMethods: [
+       "DateFunctionCall()"
+       "DateaddFunctionCall()"
+    ]
   }
 }
 

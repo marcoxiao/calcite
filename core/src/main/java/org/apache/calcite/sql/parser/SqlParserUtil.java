@@ -84,8 +84,10 @@ public final class SqlParserUtil {
 
   //~ Methods ----------------------------------------------------------------
 
-  /** Returns the character-set prefix of a SQL string literal; returns null if
-   * there is none. */
+  /**
+   * Returns the character-set prefix of a SQL string literal; returns null if
+   * there is none.
+   */
   public static @Nullable String getCharacterSet(String s) {
     if (s.charAt(0) == '\'') {
       return null;
@@ -110,6 +112,14 @@ public final class SqlParserUtil {
     return strip(s, "'", "'", "''", Casing.UNCHANGED);
   }
 
+  public static String parseDoubleQuoteString(String s) {
+    int i = s.indexOf("\""); // start of body
+    if (i > 0) {
+      s = s.substring(i);
+    }
+    return strip(s, "\"", "\"", "\"\"", Casing.UNCHANGED);
+  }
+
   public static BigDecimal parseDecimal(String s) {
     return new BigDecimal(s);
   }
@@ -119,21 +129,30 @@ public final class SqlParserUtil {
   }
 
   // CHECKSTYLE: IGNORE 1
-  /** @deprecated this method is not localized for Farrago standards */
+
+  /**
+   * @deprecated this method is not localized for Farrago standards
+   */
   @Deprecated // to be removed before 2.0
   public static java.sql.Date parseDate(String s) {
     return java.sql.Date.valueOf(s);
   }
 
   // CHECKSTYLE: IGNORE 1
-  /** @deprecated Does not parse SQL:99 milliseconds */
+
+  /**
+   * @deprecated Does not parse SQL:99 milliseconds
+   */
   @Deprecated // to be removed before 2.0
   public static java.sql.Time parseTime(String s) {
     return java.sql.Time.valueOf(s);
   }
 
   // CHECKSTYLE: IGNORE 1
-  /** @deprecated this method is not localized for Farrago standards */
+
+  /**
+   * @deprecated this method is not localized for Farrago standards
+   */
   @Deprecated // to be removed before 2.0
   public static java.sql.Timestamp parseTimestamp(String s) {
     return java.sql.Timestamp.valueOf(s);
@@ -298,8 +317,8 @@ public final class SqlParserUtil {
   /**
    * Parses a positive int. All characters have to be digits.
    *
-   * @see Integer#parseInt(String)
    * @throws java.lang.NumberFormatException if invalid number or leading '-'
+   * @see Integer#parseInt(String)
    */
   public static int parsePositiveInt(String value) {
     value = value.trim();
@@ -572,8 +591,10 @@ public final class SqlParserUtil {
     return list.toArray(new SqlNode[0]);
   }
 
-  /** Converts "ROW (1, 2)" to "(1, 2)"
-   * and "3" to "(3)". */
+  /**
+   * Converts "ROW (1, 2)" to "(1, 2)"
+   * and "3" to "(3)".
+   */
   public static SqlNodeList stripRow(SqlNode n) {
     final List<SqlNode> list;
     switch (n.getKind()) {
@@ -733,9 +754,8 @@ public final class SqlParserUtil {
    * Returns whether the reported ParseException tokenImage
    * allows SQL identifier.
    *
-   * @param tokenImage The allowed tokens from the ParseException
+   * @param tokenImage             The allowed tokens from the ParseException
    * @param expectedTokenSequences Expected token sequences
-   *
    * @return true if SQL identifier is allowed
    */
   public static boolean allowsIdentifier(String[] tokenImage, int[][] expectedTokenSequences) {
@@ -755,7 +775,9 @@ public final class SqlParserUtil {
 
   //~ Inner Classes ----------------------------------------------------------
 
-  /** The components of a collation definition, per the SQL standard. */
+  /**
+   * The components of a collation definition, per the SQL standard.
+   */
   public static class ParsedCollation {
     private final Charset charset;
     private final Locale locale;
@@ -799,7 +821,8 @@ public final class SqlParserUtil {
       this.pos = pos;
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
       return op.toString();
     }
 
@@ -812,9 +835,11 @@ public final class SqlParserUtil {
     }
   }
 
-  /** Implementation of
+  /**
+   * Implementation of
    * {@link org.apache.calcite.sql.SqlSpecialOperator.TokenSequence}
-   * based on an existing parser. */
+   * based on an existing parser.
+   */
   private static class TokenSequenceImpl
       implements SqlSpecialOperator.TokenSequence {
     final List<PrecedenceClimbingParser.Token> list;
@@ -825,16 +850,19 @@ public final class SqlParserUtil {
       this.list = parser.all();
     }
 
-    @Override public PrecedenceClimbingParser parser(int start,
+    @Override
+    public PrecedenceClimbingParser parser(int start,
         Predicate<PrecedenceClimbingParser.Token> predicate) {
       return parser.copy(start, predicate);
     }
 
-    @Override public int size() {
+    @Override
+    public int size() {
       return list.size();
     }
 
-    @Override public SqlOperator op(int i) {
+    @Override
+    public SqlOperator op(int i) {
       ToTreeListItem o = (ToTreeListItem) requireNonNull(list.get(i).o,
           () -> "list.get(" + i + ").o is null in " + list);
       return o.getOperator();
@@ -857,25 +885,31 @@ public final class SqlParserUtil {
       }
     }
 
-    @Override public SqlParserPos pos(int i) {
+    @Override
+    public SqlParserPos pos(int i) {
       return pos(list.get(i));
     }
 
-    @Override public boolean isOp(int i) {
+    @Override
+    public boolean isOp(int i) {
       return list.get(i).o instanceof ToTreeListItem;
     }
 
-    @Override public SqlNode node(int i) {
+    @Override
+    public SqlNode node(int i) {
       return convert(list.get(i));
     }
 
-    @Override public void replaceSublist(int start, int end, SqlNode e) {
+    @Override
+    public void replaceSublist(int start, int end, SqlNode e) {
       SqlParserUtil.replaceSublist(list, start, end, parser.atom(e));
     }
   }
 
-  /** Implementation of
-   * {@link org.apache.calcite.sql.SqlSpecialOperator.TokenSequence}. */
+  /**
+   * Implementation of
+   * {@link org.apache.calcite.sql.SqlSpecialOperator.TokenSequence}.
+   */
   private static class OldTokenSequenceImpl
       implements SqlSpecialOperator.TokenSequence {
     final List<@Nullable Object> list;
@@ -884,7 +918,8 @@ public final class SqlParserUtil {
       this.list = list;
     }
 
-    @Override public PrecedenceClimbingParser parser(int start,
+    @Override
+    public PrecedenceClimbingParser parser(int start,
         Predicate<PrecedenceClimbingParser.Token> predicate) {
       final PrecedenceClimbingParser.Builder builder =
           new PrecedenceClimbingParser.Builder();
@@ -924,17 +959,20 @@ public final class SqlParserUtil {
       return builder.build();
     }
 
-    @Override public int size() {
+    @Override
+    public int size() {
       return list.size();
     }
 
-    @Override public SqlOperator op(int i) {
+    @Override
+    public SqlOperator op(int i) {
       ToTreeListItem item = (ToTreeListItem) requireNonNull(list.get(i),
           () -> "list.get(" + i + ")");
       return item.op;
     }
 
-    @Override public SqlParserPos pos(int i) {
+    @Override
+    public SqlParserPos pos(int i) {
       final Object o = list.get(i);
       return o instanceof ToTreeListItem
           ? ((ToTreeListItem) o).pos
@@ -942,21 +980,26 @@ public final class SqlParserUtil {
               .getParserPosition();
     }
 
-    @Override public boolean isOp(int i) {
+    @Override
+    public boolean isOp(int i) {
       return list.get(i) instanceof ToTreeListItem;
     }
 
-    @Override public SqlNode node(int i) {
+    @Override
+    public SqlNode node(int i) {
       return requireNonNull((SqlNode) list.get(i));
     }
 
-    @Override public void replaceSublist(int start, int end, SqlNode e) {
+    @Override
+    public void replaceSublist(int start, int end, SqlNode e) {
       SqlParserUtil.replaceSublist(list, start, end, e);
     }
   }
 
-  /** Pre-initialized {@link DateFormat} objects, to be used within the current
-   * thread, because {@code DateFormat} is not thread-safe. */
+  /**
+   * Pre-initialized {@link DateFormat} objects, to be used within the current
+   * thread, because {@code DateFormat} is not thread-safe.
+   */
   private static class Format {
     private static final ThreadLocal<@Nullable Format> PER_THREAD =
         ThreadLocal.withInitial(Format::new);

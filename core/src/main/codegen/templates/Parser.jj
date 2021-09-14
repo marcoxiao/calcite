@@ -1862,6 +1862,8 @@ SqlNode SelectExpression() :
         return SqlIdentifier.star(getPos());
     }
 |
+    e = SimpleIdentifierFromStringLiteral(){return e;}
+|
     e = Expression(ExprContext.ACCEPT_SUB_QUERY) {
         return e;
     }
@@ -3750,7 +3752,7 @@ SqlNode Expression3(ExprContext exprContext) :
                 (List<SqlNode>) list1);
         }
     }
-    [
+//    [
         LOOKAHEAD(2)
         /* TODO:
         (
@@ -3773,27 +3775,28 @@ SqlNode Expression3(ExprContext exprContext) :
         )
     |
         */
-        (
-            e = IntervalQualifier()
-            {
-                if ((list1.size() == 1)
-                    && list1.get(0) instanceof SqlCall)
-                {
-                    final SqlCall call = (SqlCall) list1.get(0);
-                    if (call.getKind() == SqlKind.MINUS
-                            && call.operandCount() == 2) {
-                        List<SqlNode> list3 = startList(call.operand(0));
-                        list3.add(call.operand(1));
-                        list3.add(e);
-                        return SqlStdOperatorTable.MINUS_DATE.createCall(
-                            Span.of(list1).end(this), list3);
-                     }
-                }
-                throw SqlUtil.newContextException(span().end(list1),
-                    RESOURCE.illegalMinusDate());
-            }
-        )
-    ]
+//        (
+//   注释的原因 ：INTERVAL 2 *(1-FLOOR(1)) SECOND
+//            e = IntervalQualifier()
+//            {
+//                if ((list1.size() == 1)
+//                    && list1.get(0) instanceof SqlCall)
+//                {
+//                    final SqlCall call = (SqlCall) list1.get(0);
+//                    if (call.getKind() == SqlKind.MINUS
+//                            && call.operandCount() == 2) {
+//                        List<SqlNode> list3 = startList(call.operand(0));
+//                        list3.add(call.operand(1));
+//                        list3.add(e);
+//                        return SqlStdOperatorTable.MINUS_DATE.createCall(
+//                            Span.of(list1).end(this), list3);
+//                     }
+//                }
+//                throw SqlUtil.newContextException(span().end(list1),
+//                    RESOURCE.illegalMinusDate());
+//            }
+//        )
+//    ]
     {
         if (list1.size() == 1) {
             // interpret as single value or query
@@ -4515,18 +4518,18 @@ SqlLiteral DateTimeLiteral() :
     <RBRACE> {
         return SqlParserUtil.parseTimestampLiteral(p, s.end(this));
     }
-|
-    <DATE> { s = span(); } <QUOTED_STRING> {
-        return SqlParserUtil.parseDateLiteral(token.image, s.end(this));
-    }
-|
-    <TIME> { s = span(); } <QUOTED_STRING> {
-        return SqlParserUtil.parseTimeLiteral(token.image, s.end(this));
-    }
-|
-    <TIMESTAMP> { s = span(); } <QUOTED_STRING> {
-        return SqlParserUtil.parseTimestampLiteral(token.image, s.end(this));
-    }
+//|   LOOKAHEAD(2)
+//    <DATE> { s = span(); } <QUOTED_STRING> {
+//        return SqlParserUtil.parseDateLiteral(token.image, s.end(this));
+//    }
+//|
+//    <TIME> { s = span(); } <QUOTED_STRING> {
+//        return SqlParserUtil.parseTimeLiteral(token.image, s.end(this));
+//    }
+//|
+//    <TIMESTAMP> { s = span(); } <QUOTED_STRING> {
+//        return SqlParserUtil.parseTimestampLiteral(token.image, s.end(this));
+//    }
 }
 
 /** Parses a MULTISET constructor */
@@ -4701,15 +4704,19 @@ SqlNode IntervalLiteralOrExpression() :
     |
         // To keep parsing simple, any expressions besides numeric literal and
         // identifiers must be enclosed in parentheses.
-        (
-            <LPAREN>
-            e = Expression(ExprContext.ACCEPT_SUB_QUERY)
-            <RPAREN>
-        |
-            e = UnsignedNumericLiteral()
-        |
-            e = CompoundIdentifier()
-        )
+//        LOOKAHEAD(3)
+        e = SelectExpression()
+//        (
+//            <LPAREN>
+//            e = Expression(ExprContext.ACCEPT_SUB_QUERY)
+//            <RPAREN>
+//        |
+//            e = UnsignedNumericLiteral()
+//        |
+//            e = CompoundIdentifier()
+//        |
+//            e = SelectExpression()
+//        )
         intervalQualifier = IntervalQualifierStart() {
             if (sign == -1) {
                 e = SqlStdOperatorTable.UNARY_MINUS.createCall(e.getParserPosition(), e);
@@ -5072,14 +5079,22 @@ SqlIdentifier SimpleIdentifier() :
  */
 SqlIdentifier SimpleIdentifierFromStringLiteral() :
 {
+String s;
 }
 {
-    <QUOTED_STRING> {
+    <QUOTED_STRING>{
         if (!this.conformance.allowCharLiteralAlias()) {
             throw SqlUtil.newContextException(getPos(), RESOURCE.charLiteralAliasNotValid());
         }
-        final String s = SqlParserUtil.parseString(token.image);
+        s= SqlParserUtil.parseString(token.image);
         return new SqlIdentifier(s, getPos());
+    }
+    |<DOUBLE_QUOTED_STRING>{
+       if (!this.conformance.allowCharLiteralAlias()) {
+             throw SqlUtil.newContextException(getPos(), RESOURCE.charLiteralAliasNotValid());
+          }
+       s = SqlParserUtil.parseDoubleQuoteString(token.image);
+       return new SqlIdentifier(s, getPos());
     }
 }
 
@@ -5790,7 +5805,8 @@ SqlNode BuiltinFunctionCall() :
         e = Expression(ExprContext.ACCEPT_SUB_QUERY) {
             args = startList(e);
         }
-        <USING> name = SimpleIdentifier() {
+        (<USING>
+        |<COMMA>) name = SimpleIdentifier() {
             args.add(name);
         }
         <RPAREN> {
@@ -6702,6 +6718,52 @@ SqlCall nullTreatment(SqlCall arg) :
     pair = NullTreatment() { return pair.right.createCall(pair.left, arg); }
 }
 
+/** 自定义函数*/
+SqlNode DateFunctionCall() :
+{
+    final SqlFunctionCategory funcType = SqlFunctionCategory.USER_DEFINED_FUNCTION;
+    final SqlIdentifier qualifiedName;
+    final Span s;
+    final SqlLiteral quantifier;
+    final List<? extends SqlNode> args;
+}
+{
+    (<DATE>|<TIMESTAMP>) {
+        s = span();
+        qualifiedName = new SqlIdentifier(unquotedIdentifier(), getPos());}
+        args = FunctionParameterList(ExprContext.ACCEPT_SUB_QUERY){
+        quantifier = (SqlLiteral) args.get(0);
+        args.remove(0);
+        return createCall(qualifiedName, s.end(this), funcType, quantifier, args);
+    }
+}
+SqlNode DateaddFunctionCall() :
+{
+    final SqlFunctionCategory funcType = SqlFunctionCategory.USER_DEFINED_FUNCTION;
+    final Span s;
+    final SqlIdentifier qualifiedName;
+    final TimeUnit unit;
+    final List<SqlNode> args;
+    SqlNode e;
+}
+{
+    ( <DATEADD> | <DATEDIFF> | <DATE_PART> ) {
+        s = span();
+        qualifiedName = new SqlIdentifier(unquotedIdentifier(), getPos());
+    }
+    <LPAREN> unit = TimeUnit() {
+        args = startList(new SqlIntervalQualifier(unit, null, getPos()));
+    }
+    (
+        <COMMA> e = Expression(ExprContext.ACCEPT_SUB_QUERY) {
+            args.add(e);
+        }
+    )*
+    <RPAREN> {
+        return createCall(qualifiedName, s.end(this), funcType, null, args);
+    }
+}
+
 /**
  * Parses a call to a named function (could be a builtin with regular
  * syntax, or else a UDF).
@@ -6978,7 +7040,7 @@ SqlIdentifier ContextVariable() :
     |   <LOCALTIMESTAMP>
     |   <SESSION_USER>
     |   <SYSTEM_USER>
-    |   <USER>
+//    |   <USER> //会导致User 非保留字段无法使用
     )
     {
         return new SqlIdentifier(unquotedIdentifier(), getPos());
@@ -7156,6 +7218,7 @@ SqlBinaryOperator BinaryRowOperator() :
 |   <MINUS> { return SqlStdOperatorTable.MINUS; }
 |   <STAR> { return SqlStdOperatorTable.MULTIPLY; }
 |   <SLASH> { return SqlStdOperatorTable.DIVIDE; }
+|   <DIV> { return SqlStdOperatorTable.DIVIDE; }
 |   <PERCENT_REMAINDER> {
         if (!this.conformance.isPercentRemainderAllowed()) {
             throw SqlUtil.newContextException(getPos(), RESOURCE.percentRemainderNotAllowed());
@@ -7377,6 +7440,9 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < DATA: "DATA" >
 |   < DATABASE: "DATABASE" >
 |   < DATE: "DATE" >
+|   < DATE_PART: "DATE_PART" >
+|   < DATEADD: "DATEADD" >
+|   < DATEDIFF: "DATEDIFF" >
 |   < DATETIME_INTERVAL_CODE: "DATETIME_INTERVAL_CODE" >
 |   < DATETIME_INTERVAL_PRECISION: "DATETIME_INTERVAL_PRECISION" >
 |   < DAY: "DAY" >
@@ -8044,6 +8110,8 @@ void NonReservedKeyWord2of3() :
 {
     < QUOTED_STRING: <QUOTE> ( (~["'"]) | ("''"))* <QUOTE> >
 |
+    < DOUBLE_QUOTED_STRING: <DOUBLE_QUOTE> ( (~["\""]) | ("\"\""))* <DOUBLE_QUOTE> >
+|
     < PREFIXED_STRING_LITERAL: ("_" <CHARSETNAME> | "N") <QUOTED_STRING> >
 |
     < UNICODE_STRING_LITERAL: "U" "&" <QUOTED_STRING> >
@@ -8118,6 +8186,7 @@ void NonReservedKeyWord2of3() :
 |   < MINUS: "-" >
 |   < STAR: "*" >
 |   < SLASH: "/" >
+|   < DIV: "DIV" >
 |   < PERCENT_REMAINDER: "%" >
 |   < CONCAT: "||" >
 |   < NAMED_ARGUMENT_ASSIGNMENT: "=>" >
