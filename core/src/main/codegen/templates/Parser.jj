@@ -4518,18 +4518,18 @@ SqlLiteral DateTimeLiteral() :
     <RBRACE> {
         return SqlParserUtil.parseTimestampLiteral(p, s.end(this));
     }
-//|   LOOKAHEAD(2)
-//    <DATE> { s = span(); } <QUOTED_STRING> {
-//        return SqlParserUtil.parseDateLiteral(token.image, s.end(this));
-//    }
-//|
-//    <TIME> { s = span(); } <QUOTED_STRING> {
-//        return SqlParserUtil.parseTimeLiteral(token.image, s.end(this));
-//    }
-//|
-//    <TIMESTAMP> { s = span(); } <QUOTED_STRING> {
-//        return SqlParserUtil.parseTimestampLiteral(token.image, s.end(this));
-//    }
+|
+    <DATE> { s = span(); } <QUOTED_STRING> {
+        return SqlParserUtil.parseDateLiteral(token.image, s.end(this));
+    }
+|
+    <TIME> { s = span(); } <QUOTED_STRING> {
+        return SqlParserUtil.parseTimeLiteral(token.image, s.end(this));
+    }
+|
+    <TIMESTAMP> { s = span(); } <QUOTED_STRING> {
+        return SqlParserUtil.parseTimestampLiteral(token.image, s.end(this));
+    }
 }
 
 /** Parses a MULTISET constructor */
@@ -6718,52 +6718,6 @@ SqlCall nullTreatment(SqlCall arg) :
     pair = NullTreatment() { return pair.right.createCall(pair.left, arg); }
 }
 
-/** 自定义函数*/
-SqlNode DateFunctionCall() :
-{
-    final SqlFunctionCategory funcType = SqlFunctionCategory.USER_DEFINED_FUNCTION;
-    final SqlIdentifier qualifiedName;
-    final Span s;
-    final SqlLiteral quantifier;
-    final List<? extends SqlNode> args;
-}
-{
-    (<DATE>|<TIMESTAMP>) {
-        s = span();
-        qualifiedName = new SqlIdentifier(unquotedIdentifier(), getPos());}
-        args = FunctionParameterList(ExprContext.ACCEPT_SUB_QUERY){
-        quantifier = (SqlLiteral) args.get(0);
-        args.remove(0);
-        return createCall(qualifiedName, s.end(this), funcType, quantifier, args);
-    }
-}
-SqlNode DateaddFunctionCall() :
-{
-    final SqlFunctionCategory funcType = SqlFunctionCategory.USER_DEFINED_FUNCTION;
-    final Span s;
-    final SqlIdentifier qualifiedName;
-    final TimeUnit unit;
-    final List<SqlNode> args;
-    SqlNode e;
-}
-{
-    ( <DATEADD> | <DATEDIFF> | <DATE_PART> ) {
-        s = span();
-        qualifiedName = new SqlIdentifier(unquotedIdentifier(), getPos());
-    }
-    <LPAREN> unit = TimeUnit() {
-        args = startList(new SqlIntervalQualifier(unit, null, getPos()));
-    }
-    (
-        <COMMA> e = Expression(ExprContext.ACCEPT_SUB_QUERY) {
-            args.add(e);
-        }
-    )*
-    <RPAREN> {
-        return createCall(qualifiedName, s.end(this), funcType, null, args);
-    }
-}
-
 /**
  * Parses a call to a named function (could be a builtin with regular
  * syntax, or else a UDF).
@@ -7440,9 +7394,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < DATA: "DATA" >
 |   < DATABASE: "DATABASE" >
 |   < DATE: "DATE" >
-|   < DATE_PART: "DATE_PART" >
-|   < DATEADD: "DATEADD" >
-|   < DATEDIFF: "DATEDIFF" >
 |   < DATETIME_INTERVAL_CODE: "DATETIME_INTERVAL_CODE" >
 |   < DATETIME_INTERVAL_PRECISION: "DATETIME_INTERVAL_PRECISION" >
 |   < DAY: "DAY" >

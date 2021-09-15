@@ -64,8 +64,8 @@ data: {
     # Return type of method implementation should be "SqlNode".
     # Example: "DateFunctionCall()".
     builtinFunctionCallMethods: [
-       "DateFunctionCall()"
-       "DateaddFunctionCall()"
+      # "DateFunctionCall()"
+      # "DateaddFunctionCall()"
     ]
   }
 }
