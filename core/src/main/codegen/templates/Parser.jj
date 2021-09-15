@@ -3753,30 +3753,30 @@ SqlNode Expression3(ExprContext exprContext) :
         }
     }
 //    [
-        LOOKAHEAD(2)
-        /* TODO:
-        (
-            op = periodOperator()
-            list2 = ParenthesizedQueryOrCommaList(exprContext)
-            {
-                if (list1.size() != 2 || list2.size() != 2) {
-                    throw SqlUtil.newContextException(
-                        list1.getParserPosition().plus(
-                            list2.getParserPosition()),
-                        RESOURCE.illegalOverlaps());
-                }
-                for (SqlNode node : list2) {
-                    list1.add(node);
-                }
-                return op.createCall(
-                    list1.getParserPosition().plus(list2.getParserPosition()),
-                    list1.toArray());
-            }
-        )
-    |
-        */
+//        LOOKAHEAD(2)
+//        /* TODO:
 //        (
-//   注释的原因 ：INTERVAL 2 *(1-FLOOR(1)) SECOND
+//            op = periodOperator()
+//            list2 = ParenthesizedQueryOrCommaList(exprContext)
+//            {
+//                if (list1.size() != 2 || list2.size() != 2) {
+//                    throw SqlUtil.newContextException(
+//                        list1.getParserPosition().plus(
+//                            list2.getParserPosition()),
+//                        RESOURCE.illegalOverlaps());
+//                }
+//                for (SqlNode node : list2) {
+//                    list1.add(node);
+//                }
+//                return op.createCall(
+//                    list1.getParserPosition().plus(list2.getParserPosition()),
+//                    list1.toArray());
+//            }
+//        )
+//    |
+//        */
+//        (
+//   //注释的原因 ：INTERVAL 2 *(1-FLOOR(1)) SECOND
 //            e = IntervalQualifier()
 //            {
 //                if ((list1.size() == 1)
